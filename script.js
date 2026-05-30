@@ -8,7 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
     initVideoPlayer();
     initFloatingCTA();
     initSmoothScroll();
+    initOutboundLinkEnhancements();
     initConversionTracking();
+    initEngagementTimers();
 });
 
 function pushEvent(eventName, payload = {}) {
@@ -188,6 +190,37 @@ function initConversionTracking() {
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });
+}
+
+function initOutboundLinkEnhancements() {
+    const params = new URLSearchParams({
+        utm_source: 'tralaoi_online',
+        utm_medium: 'landing_page',
+        utm_campaign: 'tra_bup_oi',
+    });
+
+    document.querySelectorAll('a[href*="s.shopee.vn"]').forEach((link) => {
+        try {
+            const url = new URL(link.href);
+            params.forEach((value, key) => {
+                if (!url.searchParams.has(key)) {
+                    url.searchParams.set(key, value);
+                }
+            });
+            link.href = url.toString();
+        } catch (error) {
+            // Ignore invalid URL values in legacy browsers.
+        }
+    });
+}
+
+function initEngagementTimers() {
+    const marks = [30, 90];
+    marks.forEach((seconds) => {
+        setTimeout(() => {
+            pushEvent('engagement_time', { seconds });
+        }, seconds * 1000);
+    });
 }
 
 /* ─── Parallax-like Counter Animation (Optional Enhancement) ─ */
