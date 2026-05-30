@@ -8,7 +8,16 @@ document.addEventListener('DOMContentLoaded', () => {
     initVideoPlayer();
     initFloatingCTA();
     initSmoothScroll();
+    initConversionTracking();
 });
+
+function pushEvent(eventName, payload = {}) {
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+        event: eventName,
+        ...payload,
+    });
+}
 
 /* ─── Scroll Animations (Intersection Observer) ────────────── */
 function initScrollAnimations() {
@@ -69,6 +78,12 @@ function initFAQAccordion() {
             // Toggle current
             item.classList.toggle('is-open');
             question.setAttribute('aria-expanded', !isOpen);
+
+            if (!isOpen) {
+                pushEvent('faq_open', {
+                    faq_id: item.id || 'unknown',
+                });
+            }
         });
     });
 }
@@ -83,18 +98,22 @@ function initVideoPlayer() {
     playBtn.addEventListener('click', () => {
         video.play();
         playBtn.classList.add('hidden');
+        pushEvent('video_play_click', { location: 'video_section' });
     });
 
     video.addEventListener('pause', () => {
         playBtn.classList.remove('hidden');
+        pushEvent('video_pause', { current_time: Math.floor(video.currentTime) });
     });
 
     video.addEventListener('play', () => {
         playBtn.classList.add('hidden');
+        pushEvent('video_play', { current_time: Math.floor(video.currentTime) });
     });
 
     video.addEventListener('ended', () => {
         playBtn.classList.remove('hidden');
+        pushEvent('video_complete', { duration: Math.floor(video.duration || 0) });
     });
 }
 
@@ -138,6 +157,37 @@ function initSmoothScroll() {
             });
         });
     });
+}
+
+function initConversionTracking() {
+    const ctaLinks = document.querySelectorAll('[data-cta]');
+    ctaLinks.forEach((link) => {
+        link.addEventListener('click', () => {
+            pushEvent('cta_click', {
+                cta_id: link.getAttribute('data-cta'),
+                href: link.getAttribute('href') || '',
+            });
+        });
+    });
+
+    const thresholds = [25, 50, 75, 90];
+    const fired = new Set();
+
+    const onScroll = () => {
+        const doc = document.documentElement;
+        const max = doc.scrollHeight - doc.clientHeight;
+        if (max <= 0) return;
+        const pct = Math.round((window.scrollY / max) * 100);
+
+        thresholds.forEach((t) => {
+            if (pct >= t && !fired.has(t)) {
+                fired.add(t);
+                pushEvent('scroll_depth', { percent: t });
+            }
+        });
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
 }
 
 /* ─── Parallax-like Counter Animation (Optional Enhancement) ─ */
